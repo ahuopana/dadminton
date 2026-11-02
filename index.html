@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Badminton Notes</title>
+<style>html,body{margin:0}</style>
+<style>
+:root{--ch:calc(100dvh - 295px);--bg:#f3f5f8;--card:#fff;--ink:#111827;--mute:#5f6b7a;--line:#dde2e9;--acc:#0f766e;--acc-ink:#fff;--acc-soft:#e6f4f1;--head:#0f2e2a;--head-ink:#fff;--warn-bg:#fef3c7;--warn-line:#fcd34d;--note-bg:#f1f4f8;--pill:#111827;--pill-ink:#fff;--danger:#b91c1c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1514;--card:#17211f;--ink:#e8eeec;--mute:#93a39f;--line:#2a3a37;--acc:#2dd4bf;--acc-ink:#05211d;--acc-soft:#173532;--head:#0a1211;--head-ink:#e8eeec;--warn-bg:#4a3a10;--warn-line:#8a6d1a;--note-bg:#1d2926;--pill:#e8eeec;--pill-ink:#0e1514;--danger:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1514;--card:#17211f;--ink:#e8eeec;--mute:#93a39f;--line:#2a3a37;--acc:#2dd4bf;--acc-ink:#05211d;--acc-soft:#173532;--head:#0a1211;--head-ink:#e8eeec;--warn-bg:#4a3a10;--warn-line:#8a6d1a;--note-bg:#1d2926;--pill:#e8eeec;--pill-ink:#0e1514;--danger:#f87171;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--mute)}button:disabled{opacity:.45;cursor:default}
+button.pri{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+button.dan{color:var(--danger)}
+button.on{background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:600}
+input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--card);width:100%}
+#app{display:grid;grid-template-columns:270px 1fr;grid-template-rows:auto 1fr;height:100%}
+header{grid-column:1/-1;display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--head);color:var(--head-ink);border-radius:12px}
+header h1{font-size:17px;margin:0 8px 0 0;white-space:nowrap}
+header button{background:#ffffff18;border-color:#ffffff30;color:var(--head-ink)}
+header button.on{background:var(--head-ink);color:var(--head)}
+header .sp{flex:1}
+#menuBtn{display:none}
+#side{background:var(--card);border-right:1px solid var(--line);overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+#side .top{display:flex;gap:6px}#side .top button{flex:1}
+.mi{display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.mi.act{border-color:var(--acc);background:var(--acc-soft)}
+.mi input{width:auto;margin-top:3px}
+.mi .t{font-weight:600}.mi .s{color:var(--mute);font-size:13px}
+main{min-width:0;overflow:auto;padding:12px}
+.empty{max-width:480px;margin:12vh auto;text-align:center;color:var(--mute)}
+.board{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch;margin:-12px -12px 8px;padding:12px 12px 8px;position:sticky;top:0;z-index:5;background:var(--bg)}
+.pl{background:var(--card);border:2px solid var(--c);border-radius:12px;padding:2px 10px;text-align:center;min-width:0}
+.pl .nm small{color:var(--mute);font-weight:500;font-size:11px;margin-left:5px}
+.pl .nm{font-weight:700;color:var(--c);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .sc{display:flex;align-items:center;justify-content:center;gap:4px;font-size:clamp(24px,3.6vw,34px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.adj{border:0;background:transparent;color:var(--ink);opacity:.28;font-size:22px;font-weight:400;line-height:1;padding:6px 9px;border-radius:8px}.adj:hover{opacity:.8;border:0}
+.pl .gw{color:var(--mute);font-size:12px}
+.mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:110px;text-align:center}.mid button{padding:3px 9px;font-size:14px}.trow{display:flex;gap:6px;align-items:center;justify-content:center}
+.timer{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.timer.up{color:var(--danger);animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.3}}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.row .sp{flex:1}
+.win{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:8px;padding:6px 10px;margin:6px 0;font-weight:600}
+.court{display:block;width:100%;max-height:62vh;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:12px;cursor:crosshair}
+.hint{color:var(--mute);font-size:13px;margin:4px 0}
+.row.chips{flex-wrap:nowrap;overflow-x:auto;justify-content:safe center;scrollbar-width:thin;padding-bottom:2px}.chips button{flex:none;white-space:nowrap;padding:4px 10px;border-radius:99px;font-size:13px}.seg{display:inline-flex}.seg button{border-radius:0}.seg button:first-child{border-radius:99px 0 0 99px}.seg button:last-child{border-radius:0 99px 99px 0}
+.log{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.log div{display:flex;gap:8px;padding:4px 10px;border-bottom:1px solid var(--line);font-size:14px;align-items:center}
+.log .x{margin-left:auto;padding:0 8px;border:0;color:var(--mute)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c)}
+textarea{min-height:70px;resize:vertical}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-size:17px}
+.card table{border-collapse:collapse;width:100%;font-size:14px}
+.card td,.card th{padding:3px 6px;text-align:center;border-bottom:1px solid var(--line)}
+.card th:first-child,.card td:first-child{text-align:left}
+.card .note{white-space:pre-wrap;background:var(--note-bg);border-radius:8px;padding:8px;font-size:14px}
+.gl{display:flex;gap:6px;flex-wrap:wrap}
+.gl span{border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-variant-numeric:tabular-nums}
+.gl b{color:var(--acc)}
+dialog{background:var(--card);color:var(--ink);border:0;border-radius:14px;padding:18px;width:min(520px,94vw);max-height:90dvh;overflow:auto;box-shadow:0 20px 60px #0006}
+dialog::backdrop{background:#0008}
+dialog h3{margin:0 0 10px}
+dialog label{display:block;margin:8px 0 3px;font-size:13px;color:var(--mute)}
+dialog .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+dialog .chk{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:15px}
+dialog .chk input{width:auto}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pill);color:var(--pill-ink);padding:9px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+#fsExit{display:none;position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:60;background:var(--pill);color:var(--pill-ink);border:2px solid var(--pill-ink);font-weight:700;padding:5px 14px;border-radius:99px;box-shadow:0 2px 10px #0006}
+body.fs #fsExit{display:block}
+body.fs header{display:none}
+body.fs .foot{display:none}
+body.fs{--ch:calc(100dvh - 170px)}
+body.fs main{padding:6px}
+body.fs .board{margin:-6px -6px 4px;padding:6px 96px 4px 56px}
+@media(max-width:520px){body.fs .board{padding:6px 76px 4px 52px}}
+body.fs #app{grid-template-columns:minmax(0,1fr);grid-template-rows:1fr}
+body.fs #side{position:fixed;inset:0 auto 0 0;background:var(--card);width:270px;z-index:20;transform:translateX(-100%);transition:.2s}
+body.fs.side #side{transform:none}
+body.fs #fsMenu{display:block}
+#fsMenu{display:none;position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));z-index:60;background:var(--pill);color:var(--pill-ink);border:2px solid var(--pill-ink);padding:5px 12px;border-radius:99px;box-shadow:0 2px 10px #0006}
+@media(max-width:800px){
+  #app{grid-template-columns:minmax(0,1fr)}
+  header{flex-wrap:wrap;padding:6px 8px;gap:6px}header h1{display:none}header button{padding:6px 9px;font-size:14px}
+  #menuBtn{display:inline-block}
+  #side{position:fixed;inset:0 auto 0 0;background:var(--card);width:270px;z-index:20;transform:translateX(-100%);transition:.2s;box-shadow:4px 0 20px #0004}
+  body.side #side{transform:none}
+  .mid{min-width:96px}.mid .hint{font-size:11px}
+}
+@media(max-width:520px){
+  .board{grid-template-columns:1fr 1fr}.mid{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:4px 10px}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button id="menuBtn" onclick="document.body.classList.toggle('side')">☰</button>
+    <h1>Badminton Notes</h1>
+    <button id="tabRec" onclick="setView('record')">Record</button>
+    <button id="tabCmp" onclick="setView('compare')">Compare</button>
+    <span class="sp"></span>
+    <button onclick="dataDlg()">Save / Load</button>
+    <button id="fsBtn" onclick="toggleFS()">⛶ Full screen</button>
+  </header>
+  <aside id="side"></aside>
+  <main id="main"></main>
+</div>
+<button id="fsMenu" title="Matches" aria-label="Matches" onclick="document.body.classList.toggle('side')">☰</button>
+<button id="fsExit" title="Exit full screen" aria-label="Exit full screen" onclick="toggleFS()">✕ Exit</button>
+<dialog id="dlg"></dialog>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KEY='badminton-notes.v1';
+let db=null;
+try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!db||!Array.isArray(db.matches))db={matches:[],active:null,sel:[]};
+let pitch='top',view='record',showMode='5',cmpFilter='all',drawing=false;
+const COL=['#3b82f6','#f97316'];
+const TAGS=['Smash','Drop','Clear','Net shot','Drive','Lift','Serve','Return','Deception','Other'];
+const L=1340,W=610,M=60;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const cur=()=>db.matches.find(m=>m.id===db.active);
+const rnd=n=>Math.round(n);
+/* points are stored as if player 1 stands on the left; a game with p1Left=false shows them mirrored */
+function flipPt(p){
+  if(p.k==='a')return p;
+  const q={...p,x1:L-p.x1,x2:L-p.x2};
+  if(p.y1!=null){q.y1=W-p.y1;q.y2=W-p.y2}
+  if(p.path)q.path=p.path.map(([x,v])=>[L-x,p.v==='s'?v:W-v]);
+  return q;
+}
+function migrate(){db.matches.forEach(m=>{if(!m.nrm){m.games.forEach(g=>{if(g.p1Left===false)g.pts=g.pts.map(flipPt)});m.nrm=1}})}
+migrate();
+
+/* ---------- model ---------- */
+function newGame(m){return{pts:[],manual:null,win:null,p1Left:m.games.length%2===0,el:0,since:null}}
+function newMatch(o){const m={id:uid(),nrm:1,p:[o.p0,o.p1],date:o.date,target:o.target,bo:o.bo,win2:o.win2,cap:o.cap,limit:o.limit,note:'',games:[],cur:0};m.games.push(newGame(m));return m}
+const counts=g=>g.pts.reduce((c,p)=>{c[p.w]+=p.k==='a'?p.d:1;return c},[0,0]);
+const score=g=>g.manual||counts(g);
+function autoWin(m,s){for(const i of[0,1]){if((s[i]>=m.target&&(!m.win2||s[i]-s[1-i]>=2))||(m.cap&&s[i]>=m.cap&&s[i]>s[1-i]))return i}return null}
+const gwin=(m,g)=>g.win!=null?g.win:autoWin(m,score(g));
+const matchWinner=m=>{if(!m.bo)return null;const t=tally(m),need=Math.floor(m.bo/2)+1;return t[0]>=need?0:t[1]>=need?1:null};
+function tally(m){const t=[0,0];m.games.forEach(g=>{const w=gwin(m,g);if(w!=null)t[w]++});return t}
+const elapsed=g=>g.el+(g.since?Date.now()-g.since:0);
+const fmt=ms=>{ms=Math.max(0,Math.round(ms/1000));return Math.floor(ms/60)+':'+String(ms%60).padStart(2,'0')};
+function rule(m){return 'to '+m.target+(m.win2?', win by 2':'')+(m.cap?', cap '+m.cap:'')+(m.limit?' · '+m.limit+' min':'')}
+
+/* ---------- ui helpers ---------- */
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2600)}
+function modal(title,body,buttons){
+  const d=$('#dlg');if(d.open)d.close();d.innerHTML=`<h3>${title}</h3><div>${body}</div><div class="btns"></div>`;
+  const bt=d.querySelector('.btns');
+  buttons.forEach(b=>{const e=document.createElement('button');e.textContent=b.label;e.className=b.cls||'';e.onclick=()=>{if(b.fn&&b.fn(d)===false)return;d.close()};bt.append(e)});
+  d.showModal();
+}
+const $d=id=>$('#dlg').querySelector('#'+id);
+
+/* ---------- court svg ---------- */
+let svgN=0;
+function courtSVG(pts,o={}){
+  const id='c'+(++svgN),V=!!o.v,MM=o.tight?50:M,rt=V?(W+2*MM)/(L+2*MM):(L+2*MM)/(W+2*MM);
+  const vb=V?`${-MM} ${-MM} ${W+2*MM} ${L+2*MM}`:`${-MM} ${-MM} ${L+2*MM} ${W+2*MM}`;
+  let s=`<svg id="${id}" class="court" viewBox="${vb}" ${o.tight?`style="width:min(100%,calc(max(180px,var(--ch))*${rt.toFixed(3)}));margin:0 auto"`:''} xmlns="http://www.w3.org/2000/svg">`;
+  s+='<defs>'+COL.map((c,i)=>`<marker id="${id}m${i}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker>`).join('')+'</defs>';
+  s+=`<g ${V?`transform="translate(${W},0) rotate(90)"`:''}>`;
+  s+=`<rect x="${-MM}" y="${-MM}" width="${L+2*MM}" height="${W+2*MM}" fill="#14532d"/><rect width="${L}" height="${W}" fill="#1f7a4d"/><rect y="46" width="${L}" height="518" fill="#2a9d63"/>`;
+  s+=`<g stroke="#fff" stroke-width="6" fill="none"><rect width="${L}" height="${W}"/><path d="M0 46H${L}M0 564H${L}M472 0V${W}M868 0V${W}M0 305H472M868 305H${L}"/></g>`;
+  s+=`<rect x="663" y="-24" width="14" height="${W+48}" fill="#f1f5f9" rx="4"/>`;
+  if(o.labels){[0,1].forEach(k=>{const x=k?1005:335,y=305;s+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="64" font-weight="700" fill="#fff" opacity=".28" ${V?`transform="rotate(-90 ${x} ${y})"`:''}>${esc(o.labels[k])}</text>`})}
+  s+=arrows(pts,id,o,false);
+  s+=`<g id="${id}live"></g></g></svg>`;
+  return s;
+}
+const ZH=600,OX=130;
+function curve(q,side){
+  const P=q.path.map(([x,v])=>[x,side?ZH-v:v]);let d=`M${P[0][0]} ${P[0][1]}`;
+  for(let i=0;i<P.length-1;i++){const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2;
+    d+=`C${p1[0]+(p2[0]-p0[0])/6} ${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6} ${p2[1]-(p3[1]-p1[1])/6} ${p2[0]} ${p2[1]}`}
+  return d;
+}
+function smooth(P){
+  if(P.length<3)return P;let Q=P.map(q=>({x:q.x,y:q.y}));
+  for(let k=0;k<8;k++){const R=[Q[0]];for(let i=1;i<Q.length-1;i++)R.push({x:(Q[i-1].x+2*Q[i].x+Q[i+1].x)/4,y:(Q[i-1].y+2*Q[i].y+Q[i+1].y)/4});R.push(Q[Q.length-1]);Q=R}
+  return Q;
+}
+function thin(P,gap){const t=[P[0]];P.forEach(q=>{const l=t[t.length-1];if(Math.hypot(q.x-l.x,q.y-l.y)>=gap)t.push(q)});const e=P[P.length-1];if(t[t.length-1]!==e){if(t.length>1&&Math.hypot(e.x-t[t.length-1].x,e.y-t[t.length-1].y)<gap/2)t.pop();t.push(e)}return t}
+const sxy=(q,side)=>side?{...q,y1:ZH-q.z1,y2:ZH-q.z2}:q;
+function pathSegs(q){const P=q.path,out=[];let a=0;(q.cut||[]).forEach(c=>{out.push(P.slice(a,c+1));a=c});out.push(P.slice(a));return out}
+function arrows(pts,id,o,side){
+  pts=pts.filter(p=>p.k!=='a'&&(side?p.v==='s':p.v!=='s'));
+  let s='';
+  pts.forEach((q,i)=>{
+    const p=sxy(q,side),last=i===pts.length-1&&o.hiLast,c=p.k==='w'?p.w:1-p.w,w=last?10:7,op=o.dim&&!last?.6:.92;
+    const d=Math.hypot(p.x2-p.x1,p.y2-p.y1),fault=p.k==='f';
+    if(q.path&&q.path.length>1){
+      const segs=pathSegs(q),n=segs.length;
+      segs.forEach((P,j)=>{
+        const h=q.hs&&q.hs[j]!=null?q.hs[j]:((n-1-j)%2===0?c:1-c),fin=j===n-1,y0=side?ZH-P[0][1]:P[0][1];
+        s+=`<path d="${curve({path:P},side)}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke="${COL[h]}" stroke-width="${w}" opacity="${op}"${fin&&fault?' stroke-dasharray="22 14"':''}${fin?` marker-end="url(#${id}m${h})"`:''}/><circle cx="${P[0][0]}" cy="${y0}" r="${w+3}" fill="${COL[h]}" opacity="${op}"/>`;
+      });
+    }else if(!fault){
+      s+=`<line x1="${p.x1}" y1="${p.y1}" x2="${p.x2}" y2="${p.y2}" stroke="${COL[c]}" stroke-width="${w}" stroke-linecap="round" opacity="${op}" marker-end="url(#${id}m${c})"/><circle cx="${p.x1}" cy="${p.y1}" r="${w+3}" fill="${COL[c]}" opacity="${op}"/>`;
+    }else if(d>40){
+      s+=`<line x1="${p.x1}" y1="${p.y1}" x2="${p.x2}" y2="${p.y2}" stroke="${COL[c]}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="22 14" opacity="${op}" marker-end="url(#${id}m${c})"/>`;
+    }
+    if(fault){const x=p.x2,y=p.y2,r=last?30:24;s+=`<path d="M${x-r} ${y-r}L${x+r} ${y+r}M${x+r} ${y-r}L${x-r} ${y+r}" stroke="${COL[c]}" stroke-width="${w+2}" stroke-linecap="round" opacity="${op}"/>`}
+  });
+  return s;
+}
+const NETH=175,BH=90;
+function sideSVG(pts,o={}){
+  const id='c'+(++svgN),TM=o.tight?10:30,H=ZH+TM+BH,rt=(L+2*OX)/H;
+  let s=`<svg id="${id}" class="court" viewBox="${-OX} ${-TM} ${L+2*OX} ${H}" ${o.tight?`style="width:min(100%,calc(max(180px,var(--ch))*${rt.toFixed(3)}));margin:0 auto"`:''} xmlns="http://www.w3.org/2000/svg">`;
+  s+='<defs>'+COL.map((c,i)=>`<marker id="${id}m${i}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker>`).join('')+'</defs>';
+  s+=`<rect x="${-OX}" y="${-TM}" width="${L+2*OX}" height="${H}" fill="#1c3b4a"/>`;
+  s+=`<rect x="${-OX}" y="${-TM}" width="${OX}" height="${ZH+TM}" fill="#b91c1c" opacity=".22"/><rect x="${L}" y="${-TM}" width="${OX}" height="${ZH+TM}" fill="#b91c1c" opacity=".22"/>`;
+  s+=`<rect x="0" y="${ZH}" width="${L}" height="${BH}" fill="#9f2a2a"/><rect x="${-OX}" y="${ZH}" width="${OX}" height="${BH}" fill="#9f2a2a"/><rect x="${L}" y="${ZH}" width="${OX}" height="${BH}" fill="#9f2a2a"/>`;
+  s+=`<text x="${-OX/2}" y="${ZH+BH/2+14}" text-anchor="middle" font-size="40" font-weight="700" fill="#fff">OUT</text><text x="${L+OX/2}" y="${ZH+BH/2+14}" text-anchor="middle" font-size="40" font-weight="700" fill="#fff">OUT</text><text x="${L/2}" y="${ZH+BH/2+14}" text-anchor="middle" font-size="40" font-weight="700" fill="#fff" opacity=".9">WIDE</text>`;
+  for(let h=100;h<ZH;h+=100)s+=`<line x1="0" x2="${L}" y1="${ZH-h}" y2="${ZH-h}" stroke="#fff" stroke-width="3" opacity=".14"/><text x="14" y="${ZH-h-8}" font-size="26" fill="#fff" opacity=".5">${h/100} m</text>`;
+  s+=`<path d="M${-OX} ${ZH}H${L+OX}M0 ${ZH-40}V${ZH+BH}M${L} ${ZH-40}V${ZH+BH}M472 ${ZH-24}V${ZH}M868 ${ZH-24}V${ZH}" stroke="#fff" stroke-width="6" fill="none"/>`;
+  s+=`<rect x="664" y="${ZH-NETH}" width="12" height="${NETH}" fill="#f1f5f9"/><rect x="655" y="${ZH-NETH-5}" width="30" height="10" rx="4" fill="#fff"/><text x="696" y="${ZH-NETH+26}" font-size="26" fill="#fff" opacity=".6">net</text>`;
+  if(o.labels)[0,1].forEach(k=>{s+=`<text x="${k?1005:335}" y="90" text-anchor="middle" font-size="64" font-weight="700" fill="#fff" opacity=".28">${esc(o.labels[k])}</text>`});
+  s+=arrows(pts,id,o,true);
+  s+=`<g id="${id}live"></g></svg>`;
+  return s;
+}
+function attachDraw(svg,V,m,g,side){
+  const live=svg.querySelector('[id$=live]');
+  let pth=[],a=null;
+  const canon=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+    if(side)return{x:Math.max(-OX,Math.min(L+OX,p.x)),y:Math.max(0,Math.min(ZH+BH,p.y))};
+    const c=V?{x:p.y,y:W-p.x}:{x:p.x,y:p.y};return{x:Math.max(-50,Math.min(L+50,c.x)),y:Math.max(-50,Math.min(W+50,c.y))}};
+  const reset=()=>{a=null;pth=[];drawing=false;live.innerHTML=''};
+  svg.addEventListener('pointerdown',e=>{if(!e.isPrimary||a){reset();return}e.preventDefault();svg.setPointerCapture(e.pointerId);a=canon(e);pth=[a];drawing=true;
+    const col=COL[(a.x<670)===g.p1Left?0:1];
+    live.innerHTML=`<circle cx="${a.x}" cy="${a.y}" r="14" fill="${col}"/><path d="" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`});
+  svg.addEventListener('pointermove',e=>{if(!a)return;const b=canon(e),q=pth[pth.length-1];if(Math.hypot(b.x-q.x,b.y-q.y)<8)return;pth.push(b);
+    live.querySelector('path').setAttribute('d','M'+pth.map(q=>q.x+' '+q.y).join('L'))});
+  svg.addEventListener('pointerup',e=>{if(!a)return;const f=canon(e),l=pth[pth.length-1];if(pth.length>1&&Math.hypot(f.x-l.x,f.y-l.y)>2)pth.push(f);
+    const path=pth,s=a;reset();commit(m,g,s,path[path.length-1],side,path)});
+  svg.addEventListener('pointercancel',reset);
+}
+/* The drawn line is the whole rally. Whenever the line turns back towards the net, the player on that side hit the shuttle. */
+function hitPeaks(P){
+  const D=P.map(q=>Math.abs(q.x-670)),T=50,peaks=[];
+  let mode=0,hi=0,lo=0;
+  for(let i=1;i<D.length;i++){
+    if(mode===0){if(D[i]-D[0]>=T){mode=1;hi=i}else if(D[0]-D[i]>=T){mode=-1;lo=i}}
+    else if(mode===1){if(D[i]>D[hi])hi=i;else if(D[hi]-D[i]>=T){peaks.push(hi);mode=-1;lo=i}}
+    else{if(D[i]<D[lo])lo=i;else if(D[i]-D[lo]>=T){mode=1;hi=i}}
+  }
+  return peaks;
+}
+function commit(m,g,a,b,side,path){
+  if(gwin(m,g)!=null){toast('Game finished – undo, edit the result, or start the next game');return}
+  const pl=x=>((x<670)===g.p1Left)?0:1,h0=pl(a.x);
+  const P=path&&path.length>1?path:[a,b];
+  let len=0;for(let i=1;i<P.length;i++)len+=Math.hypot(P[i].x-P[i-1].x,P[i].y-P[i-1].y);
+  const tap=len<40;
+  let w,k,out=null,base;
+  if(tap){
+    w=1-h0;k='f';
+    base=side?{v:'s',x1:rnd(a.x),x2:rnd(a.x),z1:rnd(ZH-a.y),z2:rnd(ZH-a.y)}:{x1:rnd(a.x),x2:rnd(a.x),y1:rnd(a.y),y2:rnd(a.y)};
+  }else{
+    const idx=[0,...hitPeaks(P)],players=idx.map(i=>pl(P[i].x)),lastP=players[players.length-1],li=idx[idx.length-1];
+    const e=P[P.length-1];
+    const crossed=Math.abs(e.x-670)>15&&((e.x<670)!==(P[li].x<670));
+    const long=e.x<0||e.x>L,wide=side?e.y>ZH+12:(e.y<46||e.y>564);
+    out=long?'long':wide?'wide':null;
+    if(crossed&&!out){w=lastP;k='w'}else{w=1-lastP;k='f'}
+    if(k==='f')toast((out?(wide?'Went wide':'Landed out'):'Into the net')+': fault by '+m.p[lastP]);
+    const cuts=[...idx,P.length-1],flat=[],cut=[];
+    for(let j=0;j+1<cuts.length;j++){
+      const t=thin(smooth(P.slice(cuts[j],cuts[j+1]+1)),24);
+      if(j===0)flat.push(...t);else flat.push(...t.slice(1));
+      if(j+2<cuts.length)cut.push(flat.length-1);
+    }
+    const conv=q=>side?[rnd(q.x),rnd(ZH-q.y)]:[rnd(q.x),rnd(q.y)];
+    base=side?{v:'s',x1:rnd(a.x),z1:rnd(ZH-a.y),x2:rnd(e.x),z2:rnd(ZH-e.y)}:{x1:rnd(a.x),y1:rnd(a.y),x2:rnd(e.x),y2:rnd(e.y)};
+    if(flat.length>2||cut.length)base.path=flat.map(conv);
+    if(cut.length){base.cut=cut;base.hs=players}
+  }
+  const pt={w,k,tag:'',t:Date.now(),...base};
+  if(out)pt.out=out;
+  if(!g.p1Left)Object.assign(pt,flipPt(pt));
+  g.pts.push(pt);if(g.manual)g.manual[pt.w]++;
+  save();render();
+}
+function removePt(i){const m=cur(),g=m.games[m.cur],p=g.pts.splice(i,1)[0];if(p&&g.manual)g.manual[p.w]=Math.max(0,g.manual[p.w]-(p.k==='a'?p.d:1));save();render()}
+function adjScore(i,d){const m=cur(),g=m.games[m.cur];if(d<0&&score(g)[i]<=0)return;g.pts.push({k:'a',w:i,d,t:Date.now()});if(g.manual)g.manual[i]=Math.max(0,g.manual[i]+d);save();render()}
+function undo(){const m=cur();if(!m)return;const g=m.games[m.cur];if(g.pts.length)removePt(g.pts.length-1)}
+
+/* ---------- sidebar ---------- */
+function renderSide(){
+  const s=$('#side');
+  let h=`<div class="top"><button class="pri" onclick="matchDlg()">+ New match</button></div>`;
+  if(db.matches.length>1)h+=`<div class="top"><button onclick="selAll(true)">Select all</button><button onclick="selAll(false)">None</button></div>`;
+  [...db.matches].reverse().forEach(m=>{
+    const t=tally(m);
+    h+=`<div class="mi ${m.id===db.active?'act':''}" onclick="openMatch('${m.id}')"><input type="checkbox" title="Show in Compare" ${db.sel.includes(m.id)?'checked':''} onclick="event.stopPropagation();toggleSel('${m.id}')"><div><div class="t">${esc(m.p[0])} vs ${esc(m.p[1])}</div><div class="s">${esc(m.date)} · games ${t[0]}–${t[1]}</div></div></div>`;
+  });
+  if(!db.matches.length)h+=`<div class="hint">No matches yet.</div>`;
+  h+=`<div class="hint" style="margin-top:auto">Tick matches to see them side by side in <b>Compare</b>.</div>`;
+  s.innerHTML=h;
+}
+function selAll(on){db.sel=on?db.matches.map(m=>m.id):[];save();render()}
+function toggleSel(id){const i=db.sel.indexOf(id);i<0?db.sel.push(id):db.sel.splice(i,1);save();render()}
+function openMatch(id){db.active=id;view='record';document.body.classList.remove('side');save();render()}
+function setView(v){view=v;render()}
+
+/* ---------- record view ---------- */
+function renderRecord(m){
+  const g=m.games[m.cur],s=score(g),t=tally(m),w=gwin(m,g),V=matchMedia('(orientation:portrait)').matches;
+  const left=g.p1Left?0:1,order=[left,1-left];
+  const sd=pitch==='side',nat=a=>a.filter(p=>p.k!=='a'&&(sd?p.v==='s':p.v!=='s'));
+  let pts=nat(g.pts),dim=false;
+  if(showMode==='1')pts=pts.slice(-1);else if(showMode==='5')pts=pts.slice(-5);else if(showMode==='match')pts=nat(m.games.flatMap(x=>x.pts));
+  if(!g.p1Left)pts=pts.map(flipPt);
+  if(showMode==='5'||showMode==='game'||showMode==='match')dim=true;
+  if(showMode==='none')pts=[];
+  const lastP=[...g.pts].reverse().find(x=>x.k!=='a');
+  const box=i=>`<div class="pl" style="--c:${COL[i]}"><div class="nm">${esc(m.p[i])}<small title="Games won">G${t[i]}</small></div><div class="sc"><button class="adj" onclick="adjScore(${i},-1)" title="Remove a point" aria-label="Remove a point from ${esc(m.p[i])}">−</button><span>${s[i]}</span><button class="adj" onclick="adjScore(${i},1)" title="Add a point" aria-label="Add a point to ${esc(m.p[i])}">+</button></div></div>`;
+  let h=`<div class="board">`+box(order[0])+`<div class="mid"><div class="hint" style="margin:0">Game ${m.cur+1}${m.bo?'/'+m.bo:''} · ${rule(m)}</div><div class="trow"><span class="timer" id="timer"></span><button onclick="toggleTimer()" id="tbtn"></button></div><div class="trow"><span class="seg"><button class="${sd?'':'on'}" onclick="setPitch('top')">Top</button><button class="${sd?'on':''}" onclick="setPitch('side')">Side</button></span><button onclick="swapSides()" title="Swap sides">⇄</button><button onclick="matchMenu()" title="Match menu">⚙</button></div></div>`+box(order[1])+`</div>`;
+  if(w!=null){
+    const mw=matchWinner(m),more=m.cur<m.games.length-1,full=m.bo&&m.games.length>=m.bo;
+    const res=`${esc(m.p[w])} wins game ${m.cur+1} (${s[0]}–${s[1]}${g.win!=null||g.manual?', set manually':''})`;
+    h+=`<div class="win"><span>${mw!=null?`${res}. ${esc(m.p[mw])} wins the match ${t[mw]}–${t[1-mw]}.`:res+'.'}</span>${mw!=null||(!more&&full)?'':more?`<button class="pri" onclick="selGame(${m.cur+1})">Go to game ${m.cur+2}</button>`:`<button class="pri" onclick="nextGame()">Start game ${m.games.length+1}</button>`}</div>`;
+  }
+  h+=(sd?sideSVG:courtSVG)(pts,{v:V,tight:true,labels:[m.p[left],m.p[1-left]],dim,hiLast:showMode!=='none'});
+  h+=`<div class="row chips"><button onclick="undo()" ${g.pts.length?'':'disabled'}>↶ Undo</button>`+TAGS.map(x=>`<button class="${lastP&&lastP.tag===x?'on':''}" onclick="tagLast('${x}')">${x}</button>`).join('')+`</div>`;
+  h+=`<div class="hint foot" style="text-align:center">Draw the path of the shuttle from the first hit to where it lands${sd?', as seen from the side':''}. Each time the line turns back towards the net, the player on that side hit the shuttle. Where it ends decides the point: it must cross the net and land in court, otherwise the last hitter faults (out${sd?', in the red OUT zones or the red strip (wide)':' or wide'}, or into the net). Tap a half for a fault there. Tags apply to the last point.</div>`;
+  $('#main').innerHTML=h;
+  attachDraw($('#main .court'),V,m,g,sd);
+  tick();
+}
+function matchMenu(){
+  const m=cur();if(!m)return;const g=m.games[m.cur];
+  modal(esc(m.p[0])+' vs '+esc(m.p[1]),`
+   <div class="row">${m.games.map((x,i)=>`<button class="${i===m.cur?'on':''}" onclick="selGame(${i});matchMenu()">Game ${i+1}${gwin(m,x)!=null?' ✓':''}</button>`).join('')}<button onclick="nextGame();matchMenu()">+ Next game</button></div>
+   <div class="row"><button onclick="swapSides();matchMenu()">⇄ Swap sides</button><button onclick="resultDlg()">✎ Edit result</button><button onclick="matchDlg(true)">Names &amp; rules</button></div>
+   <label>Show arrows on the court</label><select id="sm" onchange="showMode=this.value;render()">${[['1','Last point'],['5','Last 5'],['game','This game'],['match','Whole match'],['none','Hidden']].map(([v,l])=>`<option value="${v}" ${showMode===v?'selected':''}>${l}</option>`).join('')}</select>
+   <label>Match notes</label><textarea id="mn" placeholder="Tactical notes, what worked, things to practise…" oninput="cur().note=this.value;save()">${esc(m.note)}</textarea>
+   <label>Points in game ${m.cur+1}</label>`+(g.pts.length?`<div class="log">`+g.pts.map((p,i)=>({p,i})).reverse().map(({p,i})=>`<div style="--c:${COL[p.w]}"><span class="dot"></span><b>#${i+1}</b> ${p.k==='a'?`Score adjusted: ${esc(m.p[p.w])} ${p.d>0?'+1':'−1'}`:`${esc(m.p[p.w])} ${p.k==='w'?'wins the rally':'– '+esc(m.p[1-p.w])+(p.out==='wide'?' hit it wide':p.out?' hit it out':' fault')}${p.cut?` · ${p.cut.length+1} shots`:''}${p.tag?` · <i>${esc(p.tag)}</i>`:''}`}<button class="x" onclick="removePt(${i});matchMenu()" title="Delete">✕</button></div>`).join('')+`</div>`:'<div class="hint">No points yet.</div>'),
+   [{label:'Close',cls:'pri'}]);
+}
+function setPitch(p){pitch=p;render()}
+function tagLast(t){const m=cur(),g=m.games[m.cur],p=[...g.pts].reverse().find(x=>x.k!=='a');if(!p){toast('Record a point first');return}p.tag=p.tag===t?'':t;save();render()}
+function selGame(i){cur().cur=i;save();render()}
+function nextGame(){const m=cur(),g=m.games[m.cur];if(g.since){g.el=elapsed(g);g.since=null}m.games.push(newGame(m));m.cur=m.games.length-1;save();render()}
+function swapSides(){const g=cur().games[cur().cur];g.p1Left=!g.p1Left;save();render()}
+function toggleTimer(){const g=cur().games[cur().cur];if(g.since){g.el=elapsed(g);g.since=null}else g.since=Date.now();save();tick()}
+function tick(){
+  const m=cur();if(!m||view!=='record')return;
+  const g=m.games[m.cur],e=elapsed(g),t=$('#timer'),b=$('#tbtn');if(!t)return;
+  if(m.limit){const r=m.limit*60000-e;t.textContent=r>0?fmt(r):'TIME UP';t.classList.toggle('up',r<=0)}else{t.textContent=fmt(e);t.classList.remove('up')}
+  b.textContent=g.since?'⏸':'▶';b.title=g.since?'Pause timer':(e?'Resume timer':'Start timer');
+}
+setInterval(tick,300);
+
+/* ---------- dialogs ---------- */
+function matchDlg(edit){
+  const m=edit?cur():null,v=m||{p:['',''],date:new Date().toISOString().slice(0,10),target:21,bo:3,win2:false,cap:0,limit:0};
+  modal(edit?'Match settings':'New match',`
+   <div class="two"><div><label>Player 1</label><input id="f0" value="${esc(v.p[0])}" placeholder="Player 1"></div><div><label>Player 2</label><input id="f1" value="${esc(v.p[1])}" placeholder="Player 2"></div></div>
+   <div class="two"><div><label>Date</label><input id="fd" type="date" value="${esc(v.date)}"></div><div><label>Points per game</label><input id="ft" type="number" min="1" value="${v.target}" list="tl"><datalist id="tl"><option>21<option>15<option>11<option>7</datalist></div></div>
+   <div class="two"><div><label>Time limit per game (min, 0 = none)</label><input id="fl" type="number" min="0" value="${v.limit||0}"></div><div><label>Point cap (0 = none)</label><input id="fc" type="number" min="0" value="${v.cap||0}"></div></div>
+   <div class="two"><div><label>Number of games</label><input id="fb" type="number" min="1" max="9" value="${v.bo||3}"></div><div class="hint" style="align-self:end;margin:0 0 8px">Best of this many. Use 1, 3 or 5.</div></div>
+   <label class="chk"><input id="f2" type="checkbox" ${v.win2?'checked':''}> Must win by 2 points</label>`,
+   [...(edit?[{label:'Delete match',cls:'dan',fn:d=>{d.close();modal('Delete this match?','<div class="hint">All points and notes of this match will be removed. Export it first if you want a copy.</div>',[{label:'Keep it'},{label:'Delete',cls:'dan',fn:()=>{db.matches=db.matches.filter(x=>x.id!==m.id);db.sel=db.sel.filter(x=>x!==m.id);db.active=db.matches.length?db.matches[db.matches.length-1].id:null;save();render()}}]);return false}}]:[]),
+    {label:'Cancel'},
+    {label:edit?'Save':'Start match',cls:'pri',fn:d=>{
+      const o={p0:$d('f0').value.trim()||'Player 1',p1:$d('f1').value.trim()||'Player 2',date:$d('fd').value,target:Math.max(1,+$d('ft').value||21),limit:Math.max(0,+$d('fl').value||0),cap:Math.max(0,+$d('fc').value||0),bo:Math.min(9,Math.max(1,+$d('fb').value||1)),win2:$d('f2').checked};
+      if(edit){Object.assign(m,{p:[o.p0,o.p1],date:o.date,target:o.target,limit:o.limit,cap:o.cap,bo:o.bo,win2:o.win2})}
+      else{const n=newMatch(o);db.matches.push(n);db.active=n.id;view='record'}
+      save();render()}}]);
+  setTimeout(()=>$d('f0').focus(),50);
+}
+function resultDlg(){
+  const m=cur(),g=m.games[m.cur],s=score(g),c=counts(g);
+  modal(`Game ${m.cur+1} result`,`
+   <div class="hint">Recorded points: ${esc(m.p[0])} ${c[0]} – ${c[1]} ${esc(m.p[1])}. Overwrite the total if you did not record every rally.</div>
+   <div class="two"><div><label>${esc(m.p[0])} points</label><input id="r0" type="number" min="0" value="${s[0]}"></div><div><label>${esc(m.p[1])} points</label><input id="r1" type="number" min="0" value="${s[1]}"></div></div>
+   <label>Winner</label><select id="rw"><option value="">Automatic (from score and rules)</option><option value="0" ${g.win===0?'selected':''}>${esc(m.p[0])}</option><option value="1" ${g.win===1?'selected':''}>${esc(m.p[1])}</option></select>`,
+   [{label:'Reset to recorded',fn:()=>{g.manual=null;g.win=null;save();render()}},{label:'Cancel'},{label:'Save',cls:'pri',fn:()=>{
+     const a=Math.max(0,+$d('r0').value||0),b=Math.max(0,+$d('r1').value||0);
+     g.manual=(a===c[0]&&b===c[1])?null:[a,b];const w=$d('rw').value;g.win=w===''?null:+w;save();render()}}]);
+}
+
+/* ---------- compare ---------- */
+function stats(m){
+  const r=[0,1].map(()=>({won:0,win:0,opp:0,own:0,tags:{}}));
+  m.games.forEach(g=>g.pts.forEach(p=>{
+    if(p.k==='a'){r[p.w].won+=p.d;return}
+    r[p.w].won++;
+    if(p.k==='w')r[p.w].win++;else{r[p.w].opp++;r[1-p.w].own++}
+    if(p.tag){const o=p.k==='w'?p.w:1-p.w;r[o].tags[p.tag]=(r[o].tags[p.tag]||0)+1}
+  }));return r;
+}
+function renderCompare(){
+  let ids=db.sel.length?db.sel:(db.active?[db.active]:[]);
+  const ms=ids.map(id=>db.matches.find(m=>m.id===id)).filter(Boolean);
+  if(!ms.length){$('#main').innerHTML=`<div class="empty">Nothing to compare yet. Tick one or more matches in the list.</div>`;return}
+  let h=`<div class="row"><b>${ms.length} match${ms.length>1?'es':''}</b><span class="hint" style="margin:0">${db.sel.length?'ticked in list':'active match (tick more in the list)'}</span><span class="sp"></span><label class="hint" style="margin:0">Arrows:</label><select style="width:auto" onchange="cmpFilter=this.value;render()">${[['all','All points'],['w','Winners only'],['f','Faults only']].map(([v,l])=>`<option value="${v}" ${cmpFilter===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="grid">`;
+  ms.forEach(m=>{
+    const st=stats(m),t=tally(m);
+    const pts=m.games.flatMap(g=>g.pts).filter(p=>cmpFilter==='all'||p.k===cmpFilter);
+    h+=`<div class="card"><h3 style="cursor:pointer" onclick="openMatch('${m.id}')"><span style="color:${COL[0]}">${esc(m.p[0])}</span> vs <span style="color:${COL[1]}">${esc(m.p[1])}</span></h3>
+    <div class="hint" style="margin:0">${esc(m.date)} · ${rule(m)} · games <b>${t[0]}–${t[1]}</b></div>
+    <div class="gl">${m.games.map((g,i)=>{const s=score(g),w=gwin(m,g);return`<span>G${i+1}: ${w===0?'<b>'+s[0]+'</b>':s[0]}–${w===1?'<b>'+s[1]+'</b>':s[1]}</span>`}).join('')}</div>
+    ${courtSVG(pts,{})}${pts.some(p=>p.v==='s')?'<div class="hint" style="margin:0">Side view (height)</div>'+sideSVG(pts,{}):''}
+    <table><tr><th></th><th style="color:${COL[0]}">${esc(m.p[0])}</th><th style="color:${COL[1]}">${esc(m.p[1])}</th></tr>
+    <tr><td>Points recorded</td><td>${st[0].won}</td><td>${st[1].won}</td></tr>
+    <tr><td>Won with a shot</td><td>${st[0].win}</td><td>${st[1].win}</td></tr>
+    <tr><td>Opponent's faults</td><td>${st[0].opp}</td><td>${st[1].opp}</td></tr>
+    <tr><td>Own faults</td><td>${st[0].own}</td><td>${st[1].own}</td></tr>
+    <tr><td>Shot tags</td>${st.map(x=>`<td>${Object.entries(x.tags).sort((a,b)=>b[1]-a[1]).map(([k,v])=>esc(k)+' '+v).join(', ')||'–'}</td>`).join('')}</tr></table>
+    ${m.note?`<div class="note">${esc(m.note)}</div>`:''}</div>`;
+  });
+  $('#main').innerHTML=h+'</div>';
+}
+
+/* ---------- save / load ---------- */
+let dl=null;
+try{if(window.claude&&claude.use)claude.use('downloads').then(x=>{dl=x}).catch(()=>{})}catch(e){}
+async function saveFile(name,text){
+  if(!dl){const u=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'})),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Downloaded '+name);return}
+  try{await dl.save({filename:name,data:text});toast('Saved '+name)}
+  catch(e){if(e&&e.code==='declined')return;toast('Could not save the file'+(e&&e.message?': '+e.message:''))}
+}
+const stamp=()=>new Date().toISOString().slice(0,10);
+function exportJSON(onlySel){
+  const ms=onlySel?db.matches.filter(m=>db.sel.includes(m.id)):db.matches;
+  if(!ms.length){toast('No matches to export');return}
+  saveFile(`badminton-notes-${stamp()}.json`,JSON.stringify({app:'badminton-notes',v:1,matches:ms},null,1));
+}
+function exportCSV(){
+  const ms=db.sel.length?db.matches.filter(m=>db.sel.includes(m.id)):db.matches;
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const rows=[['match','date','player1','player2','game','point','score_p1','score_p2','winner','kind','shot_tag','view','x1_cm','y1_cm','x2_cm','y2_cm','height1_cm','height2_cm']];
+  ms.forEach(m=>m.games.forEach((g,gi)=>{const c=[0,0];g.pts.forEach((p,i)=>{c[p.w]+=p.k==='a'?p.d:1;rows.push([m.p[0]+' vs '+m.p[1],m.date,m.p[0],m.p[1],gi+1,i+1,c[0],c[1],m.p[p.w],p.k==='a'?'adjustment':p.k==='w'?'winner shot':'opponent fault',p.tag,p.v==='s'?'side':'top',p.x1,p.y1??'',p.x2,p.y2??'',p.z1??'',p.z2??''])})}));
+  saveFile(`badminton-points-${stamp()}.csv`,rows.map(r=>r.map(q).join(',')).join('\n'));
+}
+function importJSON(file){
+  const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(!Array.isArray(j.matches))throw 0;
+    j.matches.forEach(m=>{const i=db.matches.findIndex(x=>x.id===m.id);i<0?db.matches.push(m):db.matches[i]=m});migrate();
+    if(!db.active&&db.matches.length)db.active=db.matches[0].id;save();render();$('#dlg').close();toast('Imported '+j.matches.length+' match(es)')}catch(e){toast('Not a valid notes file')}};
+  r.readAsText(file);
+}
+function dataDlg(){
+  modal('Save / Load',`<div class="hint">Everything is stored automatically in this browser. Export to a file to keep a backup or move it to another device.</div>
+  <div class="row"><button onclick="exportJSON(false)">⬇ Export all (JSON)</button><button onclick="exportJSON(true)">⬇ Export ticked (JSON)</button><button onclick="exportCSV()">⬇ Points as CSV${db.sel.length?' (ticked)':''}</button></div>
+  <label>Import a JSON file</label><input type="file" accept=".json,application/json" onchange="importJSON(this.files[0])">`,[{label:'Close'}]);
+}
+
+/* ---------- fullscreen ---------- */
+const isFS=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function toggleFS(){
+  if(isFS()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}
+  if(document.body.classList.contains('fs')){document.body.classList.remove('fs','side');render();return}
+  const e=document.documentElement,r=e.requestFullscreen||e.webkitRequestFullscreen;
+  if(r){try{const p=r.call(e);if(p&&p.catch)p.catch(()=>{document.body.classList.add('fs');render()})}catch(x){document.body.classList.add('fs');render()}}
+  else{document.body.classList.add('fs');render()}
+}
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{document.body.classList.toggle('fs',!!isFS());document.body.classList.remove('side');render()}));
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.body.classList.contains('fs')&&!isFS()){document.body.classList.remove('fs','side');render()}
+  if((e.key==='z'||e.key==='Z')&&(e.ctrlKey||e.metaKey)&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();undo()}
+});
+document.addEventListener('click',e=>{if(document.body.classList.contains('side')&&!e.target.closest('#side,#menuBtn,#fsMenu'))document.body.classList.remove('side')});
+
+/* ---------- main render ---------- */
+function render(){
+  if(drawing)return;
+  const fs=document.body.classList.contains('fs');
+  $('#fsBtn').textContent=fs?'✕ Exit full screen':'⛶ Full screen';
+  $('#tabRec').classList.toggle('on',view==='record');$('#tabCmp').classList.toggle('on',view==='compare');
+  renderSide();
+  const m=cur();
+  if(view==='compare')renderCompare();
+  else if(!m)$('#main').innerHTML=`<div class="empty"><h2>Badminton Notes</h2><p>Record singles matches by drawing arrows from the player who won the point to the one who lost it.</p><button class="pri" onclick="matchDlg()">+ New match</button></div>`;
+  else renderRecord(m);
+}
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!$('#dlg').open)render()},200)});
+render();
+</script>
+</body>
+</html>
