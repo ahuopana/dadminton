@@ -11,6 +11,7 @@ Badminton Notes is for coaches and parents who want to follow a junior singles m
    - **Time limit per game** in minutes (0 for none). A timer counts down and shows TIME UP.
    - **Point cap** (0 for none) and **Must win by 2 points**.
    - **Number of games** (best of). Use 1, 3 or 5.
+   - **Player heights** in centimetres. The side view draws each player at this height (160 cm if you leave it as is).
 4. Press **Start match**. You can change all of this later under ⚙ → **Names & rules**.
 
 ## Recording points
@@ -32,7 +33,8 @@ The court shows each player's half. Player 1 starts on the left. Draw with a fin
 The **Top | Side** switch is in the middle of the score bar.
 
 - **Top**: the court seen from above.
-- **Side**: across is the court length, up is the height (net at about 1.75 m on screen). Draw the arc of the shuttle. Landing in the red OUT zones at the ends, or in the red strip under the court (wide), is a fault.
+- **Side**: across is the court length, up is the height, drawn to scale with the net at its real height of 1.55 m. Both players are drawn at their own height so you can see how high the shuttle passed them. Draw the arc of the shuttle. Landing in the red OUT zones at the ends, or in the red strip under the court (wide), is a fault.
+  The scoreboard sits over the top of the court in this view, so the court can be bigger. While you draw, the scoreboard fades and ignores touches, so a stroke that passes under it is not disturbed. Between strokes it works as usual.
 
 A point belongs to the view where it was drawn. Each view shows only its own points. The score counts all of them.
 
@@ -56,6 +58,16 @@ After a point, tap a tag under the court (Smash, Drop, Clear and so on) to say h
 ## Several matches
 
 Tick the matches in the left list and open **Compare**. Each match shows game scores, the arrows in top view and side view, a stats table (points won with a shot, the opponent's faults, own faults, shot tags) and the notes. You can show all arrows, winners only or faults only.
+
+### Heatmap
+
+Switch **Arrows | Heatmap** at the top of Compare, pick a **Player** and choose **Shots**, **Faults** or **Both**.
+
+- Blue-green glow: where the player's shots landed. Pink glow: where the player's faults ended.
+- The player's own side is always on the left, so heatmaps from different matches line up.
+- Top view and side view (height) are shown separately, because a point belongs to the view where it was drawn.
+- Players are matched by name. If a player is in several of the ticked matches, the first card combines all of them.
+- A fault ends the shot that went out, wide or into the net, or the tap position for a tapped fault. In a rally, only the last hit of a lost rally counts as a fault.
 
 Write notes for a match under ⚙ → **Match notes**.
 

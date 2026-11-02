@@ -17,11 +17,13 @@ beforeEach(async () => {
   await page.goto(URL);
 });
 
-async function newMatch({ target = 21, games = 3 } = {}) {
+async function newMatch({ target = 21, games = 3, h0, h1 } = {}) {
   await page.click('.empty button');
   await page.waitForTimeout(150);
   await page.fill('#f0', 'Aino');
   await page.fill('#f1', 'Ben');
+  if (h0) await page.fill('#fh0', String(h0));
+  if (h1) await page.fill('#fh1', String(h1));
   await page.fill('#ft', String(target));
   await page.fill('#fb', String(games));
   await page.click('text=Start match');
@@ -129,4 +131,52 @@ test('compare view renders stats for a match', async () => {
   await draw([[0.2, 0.3], [0.8, 0.6]]);
   await page.click('#tabCmp');
   assert.match(await page.locator('.card').innerText(), /Points recorded/);
+});
+
+test('side view shows both players at their heights and a 1.55 m net', async () => {
+  await newMatch({ h0: 172, h1: 148 });
+  await page.click('.seg button:last-child');
+  const svg = await page.locator('.court').innerHTML();
+  assert.match(svg, /Aino · 172 cm/);
+  assert.match(svg, /Ben · 148 cm/);
+  assert.match(svg, /net 1\.55 m/);
+});
+
+test('side view: scoreboard overlaps the court and ignores touches while drawing', async () => {
+  await newMatch();
+  await page.click('.seg button:last-child');
+  const court = await page.locator('.court').boundingBox();
+  const board = await page.locator('.board').boundingBox();
+  assert.ok(board.y >= court.y - 1 && board.y + board.height <= court.y + court.height, 'board sits inside the court');
+  const pe = () => page.evaluate(() => getComputedStyle(document.querySelector('.board .pl')).pointerEvents);
+  assert.equal(await pe(), 'auto');
+  await page.mouse.move(court.x + court.width * 0.4, court.y + court.height * 0.6);
+  await page.mouse.down();
+  await page.mouse.move(court.x + court.width * 0.5, court.y + court.height * 0.5, { steps: 3 });
+  assert.equal(await pe(), 'none');
+  await page.mouse.up();
+  assert.equal(await pe(), 'auto');
+});
+
+test('score buttons still work in side view', async () => {
+  await newMatch();
+  await page.click('.seg button:last-child');
+  await page.click('.adj >> nth=1');
+  assert.deepEqual(await scores(), [1, 0]);
+});
+
+test('heatmap: shots and faults per player in compare', async () => {
+  await newMatch();
+  await draw([[0.2, 0.3], [0.8, 0.6]]);            // Aino shot lands in Ben's court
+  await draw([[0.2, 0.3], [0.8, 0.6], [0.6, 0.4]]); // Ben's return falls short: Ben fault
+  await page.click('#tabCmp');
+  await page.click('text=Heatmap');
+  let card = await page.locator('.card').innerText();
+  assert.match(card, /Aino: 2 shots, 0 faults/);
+  assert.ok(await page.locator('.card svg circle[fill^="url(#"]').count() >= 2);
+  await page.selectOption('#hp', { label: 'Ben' });
+  card = await page.locator('.card').innerText();
+  assert.match(card, /Ben: 0 shots, 1 fault/);
+  await page.click('button:has-text("Faults")');
+  assert.equal(await page.locator('.card svg circle[fill^="url(#"]').count(), 1);
 });

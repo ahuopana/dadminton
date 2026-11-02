@@ -4,7 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Badminton Notes</title>
-<style>html,body{margin:0}</style>
+<style>html,body{margin:0}/* side view: scoreboard overlaps the court */
+.ovb{position:relative;margin:0 auto}
+.ovb .court{width:100%;max-height:none}
+.ovb .board{position:absolute;top:0;left:0;right:0;margin:0;padding:6px;background:transparent;pointer-events:none;z-index:5}
+.ovb .board .pl,.ovb .board .mid{pointer-events:auto;transition:opacity .12s}
+.ovb .pl{background:color-mix(in srgb,var(--card) 80%,transparent)}
+.ovb .mid{background:color-mix(in srgb,var(--card) 70%,transparent);border-radius:12px;padding:3px 6px}
+.ovb .board.drawing .pl,.ovb .board.drawing .mid{pointer-events:none;opacity:.3}
+.ovb .win{position:absolute;left:50%;transform:translateX(-50%);top:112px;z-index:6;width:max-content;max-width:94%;box-shadow:0 4px 18px #0005}
+main.ovl{--ch:calc(100dvh - 195px)}
+body.fs main.ovl{--ch:calc(100dvh - 62px)}
+body.fs .ovb .board{margin:0;padding:6px 96px 4px 56px}
+@media(max-width:520px){body.fs .ovb .board{padding:6px 76px 4px 52px}}
+.heatkey{display:inline-flex;gap:12px;align-items:center;font-size:13px;color:var(--mute)}
+.heatkey i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+</style>
 <style>
 :root{--ch:calc(100dvh - 295px);--bg:#f3f5f8;--card:#fff;--ink:#111827;--mute:#5f6b7a;--line:#dde2e9;--acc:#0f766e;--acc-ink:#fff;--acc-soft:#e6f4f1;--head:#0f2e2a;--head-ink:#fff;--warn-bg:#fef3c7;--warn-line:#fcd34d;--note-bg:#f1f4f8;--pill:#111827;--pill-ink:#fff;--danger:#b91c1c}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1514;--card:#17211f;--ink:#e8eeec;--mute:#93a39f;--line:#2a3a37;--acc:#2dd4bf;--acc-ink:#05211d;--acc-soft:#173532;--head:#0a1211;--head-ink:#e8eeec;--warn-bg:#4a3a10;--warn-line:#8a6d1a;--note-bg:#1d2926;--pill:#e8eeec;--pill-ink:#0e1514;--danger:#f87171;color-scheme:dark}}
@@ -130,7 +145,7 @@ const KEY='badminton-notes.v1';
 let db=null;
 try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!db||!Array.isArray(db.matches))db={matches:[],active:null,sel:[]};
-let pitch='top',view='record',showMode='5',cmpFilter='all',drawing=false;
+let pitch='top',view='record',showMode='5',cmpFilter='all',cmpMode='arrows',heatPlayer='',heatKind='both',drawing=false;
 const COL=['#3b82f6','#f97316'];
 const TAGS=['Smash','Drop','Clear','Net shot','Drive','Lift','Serve','Return','Deception','Other'];
 const L=1340,W=610,M=60;
@@ -138,6 +153,7 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const cur=()=>db.matches.find(m=>m.id===db.active);
 const rnd=n=>Math.round(n);
+const heights=m=>m.h&&m.h.length===2?m.h:[160,160];
 /* points are stored as if player 1 stands on the left; a game with p1Left=false shows them mirrored */
 function flipPt(p){
   if(p.k==='a')return p;
@@ -151,7 +167,7 @@ migrate();
 
 /* ---------- model ---------- */
 function newGame(m){return{pts:[],manual:null,win:null,p1Left:m.games.length%2===0,el:0,since:null}}
-function newMatch(o){const m={id:uid(),nrm:1,p:[o.p0,o.p1],date:o.date,target:o.target,bo:o.bo,win2:o.win2,cap:o.cap,limit:o.limit,note:'',games:[],cur:0};m.games.push(newGame(m));return m}
+function newMatch(o){const m={id:uid(),nrm:1,p:[o.p0,o.p1],h:o.h,date:o.date,target:o.target,bo:o.bo,win2:o.win2,cap:o.cap,limit:o.limit,note:'',games:[],cur:0};m.games.push(newGame(m));return m}
 const counts=g=>g.pts.reduce((c,p)=>{c[p.w]+=p.k==='a'?p.d:1;return c},[0,0]);
 const score=g=>g.manual||counts(g);
 function autoWin(m,s){for(const i of[0,1]){if((s[i]>=m.target&&(!m.win2||s[i]-s[1-i]>=2))||(m.cap&&s[i]>=m.cap&&s[i]>s[1-i]))return i}return null}
@@ -184,6 +200,7 @@ function courtSVG(pts,o={}){
   s+=`<g stroke="#fff" stroke-width="6" fill="none"><rect width="${L}" height="${W}"/><path d="M0 46H${L}M0 564H${L}M472 0V${W}M868 0V${W}M0 305H472M868 305H${L}"/></g>`;
   s+=`<rect x="663" y="-24" width="14" height="${W+48}" fill="#f1f5f9" rx="4"/>`;
   if(o.labels){[0,1].forEach(k=>{const x=k?1005:335,y=305;s+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="64" font-weight="700" fill="#fff" opacity=".28" ${V?`transform="rotate(-90 ${x} ${y})"`:''}>${esc(o.labels[k])}</text>`})}
+  if(typeof o.extra==='function')s+=o.extra(id);
   s+=arrows(pts,id,o,false);
   s+=`<g id="${id}live"></g></g></svg>`;
   return s;
@@ -224,10 +241,17 @@ function arrows(pts,id,o,side){
   });
   return s;
 }
-const NETH=175,BH=90;
+const NETH=155,BH=90;
+function figureSVG(x,h,c,name,k){
+  const r=h*.07,f=ZH,hand=[x+k*h*.2,f-h*.95],tip=[hand[0]+k*30,hand[1]-62];
+  return `<g stroke="${c}" stroke-width="9" stroke-linecap="round" fill="none" opacity=".6"><circle cx="${x}" cy="${f-h+r}" r="${r}" fill="${c}" fill-opacity=".35"/>`+
+   `<path d="M${x} ${f-h+2*r}L${x} ${f-h*.52}M${x} ${f-h*.52}L${x-h*.1} ${f}M${x} ${f-h*.52}L${x+h*.1} ${f}M${x} ${f-h*.82}L${hand[0]} ${hand[1]}M${x} ${f-h*.82}L${x-k*h*.15} ${f-h*.6}"/>`+
+   `<path d="M${hand[0]} ${hand[1]}L${tip[0]} ${tip[1]}" stroke-width="6"/><ellipse cx="${tip[0]+k*8}" cy="${tip[1]-18}" rx="16" ry="24" stroke-width="5" transform="rotate(${k*18} ${tip[0]+k*8} ${tip[1]-18})"/></g>`+
+   `<text x="${x}" y="${f-h-16}" text-anchor="middle" font-size="26" font-weight="700" fill="${c}" opacity=".85">${esc(name)} · ${h} cm</text>`;
+}
 function sideSVG(pts,o={}){
   const id='c'+(++svgN),TM=o.tight?10:30,H=ZH+TM+BH,rt=(L+2*OX)/H;
-  let s=`<svg id="${id}" class="court" viewBox="${-OX} ${-TM} ${L+2*OX} ${H}" ${o.tight?`style="width:min(100%,calc(max(180px,var(--ch))*${rt.toFixed(3)}));margin:0 auto"`:''} xmlns="http://www.w3.org/2000/svg">`;
+  let s=`<svg id="${id}" class="court" viewBox="${-OX} ${-TM} ${L+2*OX} ${H}" ${o.tight&&!o.stage?`style="width:min(100%,calc(max(180px,var(--ch))*${rt.toFixed(3)}));margin:0 auto"`:''} xmlns="http://www.w3.org/2000/svg">`;
   s+='<defs>'+COL.map((c,i)=>`<marker id="${id}m${i}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker>`).join('')+'</defs>';
   s+=`<rect x="${-OX}" y="${-TM}" width="${L+2*OX}" height="${H}" fill="#1c3b4a"/>`;
   s+=`<rect x="${-OX}" y="${-TM}" width="${OX}" height="${ZH+TM}" fill="#b91c1c" opacity=".22"/><rect x="${L}" y="${-TM}" width="${OX}" height="${ZH+TM}" fill="#b91c1c" opacity=".22"/>`;
@@ -235,8 +259,10 @@ function sideSVG(pts,o={}){
   s+=`<text x="${-OX/2}" y="${ZH+BH/2+14}" text-anchor="middle" font-size="40" font-weight="700" fill="#fff">OUT</text><text x="${L+OX/2}" y="${ZH+BH/2+14}" text-anchor="middle" font-size="40" font-weight="700" fill="#fff">OUT</text><text x="${L/2}" y="${ZH+BH/2+14}" text-anchor="middle" font-size="40" font-weight="700" fill="#fff" opacity=".9">WIDE</text>`;
   for(let h=100;h<ZH;h+=100)s+=`<line x1="0" x2="${L}" y1="${ZH-h}" y2="${ZH-h}" stroke="#fff" stroke-width="3" opacity=".14"/><text x="14" y="${ZH-h-8}" font-size="26" fill="#fff" opacity=".5">${h/100} m</text>`;
   s+=`<path d="M${-OX} ${ZH}H${L+OX}M0 ${ZH-40}V${ZH+BH}M${L} ${ZH-40}V${ZH+BH}M472 ${ZH-24}V${ZH}M868 ${ZH-24}V${ZH}" stroke="#fff" stroke-width="6" fill="none"/>`;
-  s+=`<rect x="664" y="${ZH-NETH}" width="12" height="${NETH}" fill="#f1f5f9"/><rect x="655" y="${ZH-NETH-5}" width="30" height="10" rx="4" fill="#fff"/><text x="696" y="${ZH-NETH+26}" font-size="26" fill="#fff" opacity=".6">net</text>`;
-  if(o.labels)[0,1].forEach(k=>{s+=`<text x="${k?1005:335}" y="90" text-anchor="middle" font-size="64" font-weight="700" fill="#fff" opacity=".28">${esc(o.labels[k])}</text>`});
+  s+=`<rect x="664" y="${ZH-NETH}" width="12" height="${NETH}" fill="#f1f5f9"/><rect x="655" y="${ZH-NETH-5}" width="30" height="10" rx="4" fill="#fff"/><text x="696" y="${ZH-NETH+26}" font-size="26" fill="#fff" opacity=".6">net 1.55 m</text>`;
+  if(o.fig)o.fig.forEach((f,k)=>{s+=figureSVG(k?1150:190,f.h,f.c,f.n,k?-1:1)});
+  if(o.labels&&!o.fig)[0,1].forEach(k=>{s+=`<text x="${k?1005:335}" y="90" text-anchor="middle" font-size="64" font-weight="700" fill="#fff" opacity=".28">${esc(o.labels[k])}</text>`});
+  if(typeof o.extra==='function')s+=o.extra(id);
   s+=arrows(pts,id,o,true);
   s+=`<g id="${id}live"></g></svg>`;
   return s;
@@ -247,8 +273,8 @@ function attachDraw(svg,V,m,g,side){
   const canon=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());
     if(side)return{x:Math.max(-OX,Math.min(L+OX,p.x)),y:Math.max(0,Math.min(ZH+BH,p.y))};
     const c=V?{x:p.y,y:W-p.x}:{x:p.x,y:p.y};return{x:Math.max(-50,Math.min(L+50,c.x)),y:Math.max(-50,Math.min(W+50,c.y))}};
-  const reset=()=>{a=null;pth=[];drawing=false;live.innerHTML=''};
-  svg.addEventListener('pointerdown',e=>{if(!e.isPrimary||a){reset();return}e.preventDefault();svg.setPointerCapture(e.pointerId);a=canon(e);pth=[a];drawing=true;
+  const bd=()=>document.querySelector('.board'),reset=()=>{a=null;pth=[];drawing=false;live.innerHTML='';bd()?.classList.remove('drawing')};
+  svg.addEventListener('pointerdown',e=>{if(!e.isPrimary||a){reset();return}e.preventDefault();svg.setPointerCapture(e.pointerId);a=canon(e);pth=[a];drawing=true;bd()?.classList.add('drawing');
     const col=COL[(a.x<670)===g.p1Left?0:1];
     live.innerHTML=`<circle cx="${a.x}" cy="${a.y}" r="14" fill="${col}"/><path d="" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`});
   svg.addEventListener('pointermove',e=>{if(!a)return;const b=canon(e),q=pth[pth.length-1];if(Math.hypot(b.x-q.x,b.y-q.y)<8)return;pth.push(b);
@@ -343,9 +369,13 @@ function renderRecord(m){
     const res=`${esc(m.p[w])} wins game ${m.cur+1} (${s[0]}–${s[1]}${g.win!=null||g.manual?', set manually':''})`;
     h+=`<div class="win"><span>${mw!=null?`${res}. ${esc(m.p[mw])} wins the match ${t[mw]}–${t[1-mw]}.`:res+'.'}</span>${mw!=null||(!more&&full)?'':more?`<button class="pri" onclick="selGame(${m.cur+1})">Go to game ${m.cur+2}</button>`:`<button class="pri" onclick="nextGame()">Start game ${m.games.length+1}</button>`}</div>`;
   }
-  h+=(sd?sideSVG:courtSVG)(pts,{v:V,tight:true,labels:[m.p[left],m.p[1-left]],dim,hiLast:showMode!=='none'});
+  const court=(sd?sideSVG:courtSVG)(pts,{v:V,tight:true,stage:sd,labels:[m.p[left],m.p[1-left]],dim,hiLast:showMode!=='none',
+    fig:sd?[left,1-left].map(i=>({h:heights(m)[i],c:COL[i],n:m.p[i]})):null});
+  if(sd)h=`<div class="stage ovb" style="width:min(100%,calc(max(180px,var(--ch))*${((L+2*OX)/(ZH+10+BH)).toFixed(3)}))">${h}${court}</div>`;
+  else h+=court;
   h+=`<div class="row chips"><button onclick="undo()" ${g.pts.length?'':'disabled'}>↶ Undo</button>`+TAGS.map(x=>`<button class="${lastP&&lastP.tag===x?'on':''}" onclick="tagLast('${x}')">${x}</button>`).join('')+`</div>`;
   h+=`<div class="hint foot" style="text-align:center">Draw the path of the shuttle from the first hit to where it lands${sd?', as seen from the side':''}. Each time the line turns back towards the net, the player on that side hit the shuttle. Where it ends decides the point: it must cross the net and land in court, otherwise the last hitter faults (out${sd?', in the red OUT zones or the red strip (wide)':' or wide'}, or into the net). Tap a half for a fault there. Tags apply to the last point.</div>`;
+  $('#main').className=sd?'ovl':'';
   $('#main').innerHTML=h;
   attachDraw($('#main .court'),V,m,g,sd);
   tick();
@@ -376,9 +406,10 @@ setInterval(tick,300);
 
 /* ---------- dialogs ---------- */
 function matchDlg(edit){
-  const m=edit?cur():null,v=m||{p:['',''],date:new Date().toISOString().slice(0,10),target:21,bo:3,win2:false,cap:0,limit:0};
+  const m=edit?cur():null,v=m||{h:[160,160],p:['',''],date:new Date().toISOString().slice(0,10),target:21,bo:3,win2:false,cap:0,limit:0};
   modal(edit?'Match settings':'New match',`
    <div class="two"><div><label>Player 1</label><input id="f0" value="${esc(v.p[0])}" placeholder="Player 1"></div><div><label>Player 2</label><input id="f1" value="${esc(v.p[1])}" placeholder="Player 2"></div></div>
+   <div class="two"><div><label>Player 1 height (cm)</label><input id="fh0" type="number" min="100" max="230" value="${heights(v)[0]}"></div><div><label>Player 2 height (cm)</label><input id="fh1" type="number" min="100" max="230" value="${heights(v)[1]}"></div></div>
    <div class="two"><div><label>Date</label><input id="fd" type="date" value="${esc(v.date)}"></div><div><label>Points per game</label><input id="ft" type="number" min="1" value="${v.target}" list="tl"><datalist id="tl"><option>21<option>15<option>11<option>7</datalist></div></div>
    <div class="two"><div><label>Time limit per game (min, 0 = none)</label><input id="fl" type="number" min="0" value="${v.limit||0}"></div><div><label>Point cap (0 = none)</label><input id="fc" type="number" min="0" value="${v.cap||0}"></div></div>
    <div class="two"><div><label>Number of games</label><input id="fb" type="number" min="1" max="9" value="${v.bo||3}"></div><div class="hint" style="align-self:end;margin:0 0 8px">Best of this many. Use 1, 3 or 5.</div></div>
@@ -386,8 +417,8 @@ function matchDlg(edit){
    [...(edit?[{label:'Delete match',cls:'dan',fn:d=>{d.close();modal('Delete this match?','<div class="hint">All points and notes of this match will be removed. Export it first if you want a copy.</div>',[{label:'Keep it'},{label:'Delete',cls:'dan',fn:()=>{db.matches=db.matches.filter(x=>x.id!==m.id);db.sel=db.sel.filter(x=>x!==m.id);db.active=db.matches.length?db.matches[db.matches.length-1].id:null;save();render()}}]);return false}}]:[]),
     {label:'Cancel'},
     {label:edit?'Save':'Start match',cls:'pri',fn:d=>{
-      const o={p0:$d('f0').value.trim()||'Player 1',p1:$d('f1').value.trim()||'Player 2',date:$d('fd').value,target:Math.max(1,+$d('ft').value||21),limit:Math.max(0,+$d('fl').value||0),cap:Math.max(0,+$d('fc').value||0),bo:Math.min(9,Math.max(1,+$d('fb').value||1)),win2:$d('f2').checked};
-      if(edit){Object.assign(m,{p:[o.p0,o.p1],date:o.date,target:o.target,limit:o.limit,cap:o.cap,bo:o.bo,win2:o.win2})}
+      const o={p0:$d('f0').value.trim()||'Player 1',p1:$d('f1').value.trim()||'Player 2',date:$d('fd').value,target:Math.max(1,+$d('ft').value||21),limit:Math.max(0,+$d('fl').value||0),cap:Math.max(0,+$d('fc').value||0),bo:Math.min(9,Math.max(1,+$d('fb').value||1)),h:[0,1].map(i=>Math.min(230,Math.max(100,+$d('fh'+i).value||160))),win2:$d('f2').checked};
+      if(edit){Object.assign(m,{p:[o.p0,o.p1],date:o.date,target:o.target,limit:o.limit,cap:o.cap,bo:o.bo,h:o.h,win2:o.win2})}
       else{const n=newMatch(o);db.matches.push(n);db.active=n.id;view='record'}
       save();render()}}]);
   setTimeout(()=>$d('f0').focus(),50);
@@ -413,18 +444,74 @@ function stats(m){
     if(p.tag){const o=p.k==='w'?p.w:1-p.w;r[o].tags[p.tag]=(r[o].tags[p.tag]||0)+1}
   }));return r;
 }
+const pkey=n=>String(n).trim().toLowerCase();
+/* Landing spots of the shots a player hit, and where their faults ended, with the player on the left of the court. */
+function heatCollect(ms,key){
+  const top={s:[],f:[]},sd={s:[],f:[]};
+  ms.forEach(m=>{
+    const idx=m.p.findIndex(n=>pkey(n)===key);if(idx<0)return;
+    m.games.forEach(g=>g.pts.forEach(p=>{
+      if(p.k==='a')return;
+      const side=p.v==='s',segs=p.path&&p.path.length>1?pathSegs(p):null,n=segs?segs.length:1,lastH=p.k==='w'?p.w:1-p.w;
+      for(let j=0;j<n;j++){
+        const hitter=segs&&p.hs&&p.hs[j]!=null?p.hs[j]:((n-1-j)%2===0?lastH:1-lastH);
+        if(hitter!==idx)continue;
+        let x,v;
+        if(segs)[x,v]=segs[j][segs[j].length-1];else{x=p.x2;v=side?p.z2:p.y2}
+        if(x==null||v==null)continue;
+        if(idx===1){x=L-x;if(!side)v=W-v}
+        (side?sd:top)[j===n-1&&p.k==='f'?'f':'s'].push([x,v]);
+      }
+    }));
+  });
+  return{top,sd};
+}
+const SHOT_COL='#22d3ee',FAULT_COL='#e879f9';
+function heatExtra(shots,faults,side){
+  return id=>{
+    let s='';
+    [[shots,SHOT_COL],[faults,FAULT_COL]].forEach(([list,c])=>{
+      if(!list.length)return;
+      const gid=id+'h'+c.slice(1);
+      s+=`<defs><radialGradient id="${gid}"><stop offset="0" stop-color="${c}" stop-opacity=".55"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs>`;
+      list.forEach(([x,v])=>{s+=`<circle cx="${x}" cy="${side?ZH-v:v}" r="95" fill="url(#${gid})"/>`});
+    });
+    return s;
+  };
+}
+function heatBlock(list,key,name){
+  const d=heatCollect(list,key),showS=heatKind!=='faults',showF=heatKind!=='shots';
+  const ns=d.top.s.length+d.sd.s.length,nf=d.top.f.length+d.sd.f.length;
+  let h=`<div class="hint" style="margin:0"><b>${esc(name)}</b>: ${ns} shot${ns===1?'':'s'}, ${nf} fault${nf===1?'':'s'}. Own side on the left, opponent's court on the right.</div>`;
+  if(!ns&&!nf)return h+`<div class="hint">No shots recorded yet.</div>`;
+  if(d.top.s.length+d.top.f.length)h+='<div class="hint" style="margin:0">Top view</div>'+courtSVG([],{labels:[name,'Opponent'],extra:heatExtra(showS?d.top.s:[],showF?d.top.f:[],false)});
+  if(d.sd.s.length+d.sd.f.length)h+='<div class="hint" style="margin:0">Side view (height)</div>'+sideSVG([],{extra:heatExtra(showS?d.sd.s:[],showF?d.sd.f:[],true)});
+  return h;
+}
 function renderCompare(){
   let ids=db.sel.length?db.sel:(db.active?[db.active]:[]);
   const ms=ids.map(id=>db.matches.find(m=>m.id===id)).filter(Boolean);
   if(!ms.length){$('#main').innerHTML=`<div class="empty">Nothing to compare yet. Tick one or more matches in the list.</div>`;return}
-  let h=`<div class="row"><b>${ms.length} match${ms.length>1?'es':''}</b><span class="hint" style="margin:0">${db.sel.length?'ticked in list':'active match (tick more in the list)'}</span><span class="sp"></span><label class="hint" style="margin:0">Arrows:</label><select style="width:auto" onchange="cmpFilter=this.value;render()">${[['all','All points'],['w','Winners only'],['f','Faults only']].map(([v,l])=>`<option value="${v}" ${cmpFilter===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="grid">`;
+  const names=new Map();ms.forEach(m=>m.p.forEach(n=>{if(!names.has(pkey(n)))names.set(pkey(n),n.trim())}));
+  if(!names.has(heatPlayer))heatPlayer=[...names.keys()][0];
+  const heat=cmpMode==='heat';
+  let h=`<div class="row"><b>${ms.length} match${ms.length>1?'es':''}</b><span class="hint" style="margin:0">${db.sel.length?'ticked in list':'active match (tick more in the list)'}</span><span class="sp"></span><span class="seg"><button class="${heat?'':'on'}" onclick="cmpMode='arrows';render()">Arrows</button><button class="${heat?'on':''}" onclick="cmpMode='heat';render()">Heatmap</button></span></div>`;
+  if(heat){
+    h+=`<div class="row"><label class="hint" style="margin:0" for="hp">Player</label><select id="hp" style="width:auto" onchange="heatPlayer=this.value;render()">${[...names].map(([k,n])=>`<option value="${esc(k)}" ${k===heatPlayer?'selected':''}>${esc(n)}</option>`).join('')}</select><span class="seg">${[['shots','Shots'],['faults','Faults'],['both','Both']].map(([v,l])=>`<button class="${heatKind===v?'on':''}" onclick="heatKind='${v}';render()">${l}</button>`).join('')}</span><span class="heatkey"><span><i style="background:${SHOT_COL}"></i>Shots land</span><span><i style="background:${FAULT_COL}"></i>Faults end</span></span></div>`;
+  }else{
+    h+=`<div class="row"><label class="hint" style="margin:0" for="af">Arrows</label><select id="af" style="width:auto" onchange="cmpFilter=this.value;render()">${[['all','All points'],['w','Winners only'],['f','Faults only']].map(([v,l])=>`<option value="${v}" ${cmpFilter===v?'selected':''}>${l}</option>`).join('')}</select></div>`;
+  }
+  h+=`<div class="grid">`;
+  const pname=names.get(heatPlayer),withP=ms.filter(m=>m.p.some(n=>pkey(n)===heatPlayer));
+  if(heat&&withP.length>1)h+=`<div class="card"><h3>${esc(pname)}: all ${withP.length} matches</h3>${heatBlock(withP,heatPlayer,pname)}</div>`;
   ms.forEach(m=>{
     const st=stats(m),t=tally(m);
     const pts=m.games.flatMap(g=>g.pts).filter(p=>cmpFilter==='all'||p.k===cmpFilter);
+    const inMatch=m.p.some(n=>pkey(n)===heatPlayer);
     h+=`<div class="card"><h3 style="cursor:pointer" onclick="openMatch('${m.id}')"><span style="color:${COL[0]}">${esc(m.p[0])}</span> vs <span style="color:${COL[1]}">${esc(m.p[1])}</span></h3>
     <div class="hint" style="margin:0">${esc(m.date)} · ${rule(m)} · games <b>${t[0]}–${t[1]}</b></div>
     <div class="gl">${m.games.map((g,i)=>{const s=score(g),w=gwin(m,g);return`<span>G${i+1}: ${w===0?'<b>'+s[0]+'</b>':s[0]}–${w===1?'<b>'+s[1]+'</b>':s[1]}</span>`}).join('')}</div>
-    ${courtSVG(pts,{})}${pts.some(p=>p.v==='s')?'<div class="hint" style="margin:0">Side view (height)</div>'+sideSVG(pts,{}):''}
+    ${heat?(inMatch?heatBlock([m],heatPlayer,pname):`<div class="hint">${esc(pname)} did not play in this match.</div>`):`${courtSVG(pts,{})}${pts.some(p=>p.v==='s')?'<div class="hint" style="margin:0">Side view (height)</div>'+sideSVG(pts,{}):''}`}
     <table><tr><th></th><th style="color:${COL[0]}">${esc(m.p[0])}</th><th style="color:${COL[1]}">${esc(m.p[1])}</th></tr>
     <tr><td>Points recorded</td><td>${st[0].won}</td><td>${st[1].won}</td></tr>
     <tr><td>Won with a shot</td><td>${st[0].win}</td><td>${st[1].win}</td></tr>
@@ -495,6 +582,7 @@ function render(){
   $('#tabRec').classList.toggle('on',view==='record');$('#tabCmp').classList.toggle('on',view==='compare');
   renderSide();
   const m=cur();
+  $('#main').className='';
   if(view==='compare')renderCompare();
   else if(!m)$('#main').innerHTML=`<div class="empty"><h2>Badminton Notes</h2><p>Record singles matches by drawing arrows from the player who won the point to the one who lost it.</p><button class="pri" onclick="matchDlg()">+ New match</button></div>`;
   else renderRecord(m);
