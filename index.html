@@ -464,10 +464,11 @@ function importJSON(file){
     if(!db.active&&db.matches.length)db.active=db.matches[0].id;save();render();$('#dlg').close();toast('Imported '+j.matches.length+' match(es)')}catch(e){toast('Not a valid notes file')}};
   r.readAsText(file);
 }
+const VERSION='1.0.0';
 function dataDlg(){
   modal('Save / Load',`<div class="hint">Everything is stored automatically in this browser. Export to a file to keep a backup or move it to another device.</div>
   <div class="row"><button onclick="exportJSON(false)">⬇ Export all (JSON)</button><button onclick="exportJSON(true)">⬇ Export ticked (JSON)</button><button onclick="exportCSV()">⬇ Points as CSV${db.sel.length?' (ticked)':''}</button></div>
-  <label>Import a JSON file</label><input type="file" accept=".json,application/json" onchange="importJSON(this.files[0])">`,[{label:'Close'}]);
+  <label>Import a JSON file</label><input type="file" accept=".json,application/json" onchange="importJSON(this.files[0])"><div class="hint" style="margin-top:14px">Badminton Notes v${VERSION}</div>`,[{label:'Close'}]);
 }
 
 /* ---------- fullscreen ---------- */

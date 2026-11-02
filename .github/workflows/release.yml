@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - name: Check version matches tag
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "const VERSION='$v'" index.html || { echo "index.html VERSION does not match $v"; exit 1; }
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp index.html badminton-notes-${GITHUB_REF_NAME}.html
+          gh release create "$GITHUB_REF_NAME" badminton-notes-${GITHUB_REF_NAME}.html \
+            --title "Badminton Notes ${GITHUB_REF_NAME#v}" --generate-notes
